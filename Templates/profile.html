@@ -90,15 +90,7 @@
             <h2 style="margin-bottom: 20px;">Authenticated</h2>
             <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; text-align: left;">
                 <p style="margin-bottom: 8px;"><strong>CFO:</strong> {{ user.username }}</p>
-                {% if user.monthly_limit %}
-                    <p style="margin-bottom: 8px;"><strong>Monthly Limit:</strong> ₹{{ user.monthly_limit }}</p>
-                {% else %}
-                    <form action="{{ url_for('my_profile') }}" method="POST" style="margin-top: 10px;">
-                        <label for="update_limit" style="font-weight: 600; color: #ffd700;">30 Days Complete! Set New Limit:</label>
-                        <input type="number" name="update_limit" required style="width:100%; padding: 8px; margin-top:5px; border-radius: 5px; border: 1px solid white; background: rgba(0,0,0,0.5); color: white;" placeholder="e.g. 6000">
-                        <button type="submit" style="margin-top: 10px; margin-bottom: 15px; width: 100%; padding: 8px; background: #ffd700; color: black; border: none; font-weight: bold; cursor: pointer; border-radius: 5px;">Save New Limit</button>
-                    </form>
-                {% endif %}
+                <p style="margin-bottom: 8px;"><strong>Monthly Limit:</strong> ₹{{ user.monthly_limit }}</p>
                 <p><strong>Cycle Start:</strong> {{ user.start_date.strftime('%Y-%m-%d') }}</p>
             </div>
             <form action="{{ url_for('logout') }}" method="POST" style="margin-top: 25px;">
@@ -113,7 +105,7 @@
     document.addEventListener("DOMContentLoaded", () => {
         const flashes = document.querySelectorAll('.flashes .success');
         if (flashes.length > 0) {
-            const unlockSound = new Audio("{{ url_for('static', filename='audio/unlock.wav') }}");
+            const unlockSound = new Audio("{{ url_for('static', filename='audio/unlock.mp3') }}");
             unlockSound.play().catch(e => console.log("Audio play prevented:", e));
         }
     });
