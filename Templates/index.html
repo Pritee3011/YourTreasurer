@@ -1,3 +1,85 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="content-container">
+    <h1 class="title">Dashboard</h1>
+    <p class="subtitle">Welcome, {{ session.username }}!</p>
+
+    <!-- Daily Expense & Loan Entry Form -->
+    <div class="dashboard-panel glass-form-wrapper">
+        <h2>Log an Expense</h2>
+        <form id="expenseForm" action="{{ url_for('add_expense') }}" method="POST" class="glass-form">
+            <div class="form-group">
+                <label for="category">Category</label>
+                <select id="category" name="category" required>
+                    <option value="" disabled selected>Select Category</option>
+                    <option value="Junk Food">Junk Food</option>
+                    <option value="Educational">Educational</option>
+                    <option value="Travel">Travel</option>
+                    <option value="Hostel Rent">Hostel Rent</option>
+                    <option value="Lifestyle">Lifestyle</option>
+                    <option value="Healthy Food">Healthy Food</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="amount">Amount (₹)</label>
+                <input type="number" id="amount" name="amount" step="0.01" required>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="is_loan" name="is_loan" value="yes"> Is it a Loan?
+                </label>
+            </div>
+
+            <!-- Hidden Loan Fields -->
+            <div id="loan-fields" class="hidden">
+                <div class="form-group">
+                    <label for="friend_email">Friend's Email</label>
+                    <input type="email" id="friend_email" name="friend_email">
+                </div>
+                <div class="form-group">
+                    <label for="friend_relationship">Relationship</label>
+                    <input type="text" id="friend_relationship" name="friend_relationship" placeholder="e.g. Roommate">
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn" id="trackBtn">
+                <span id="btnText">Track Now</span>
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Audio context
+    const clinkSound = new Audio("{{ url_for('static', filename='audio/clink.mp3') }}");
+    
+    // Toggle Loan Fields
+    const loanCheckbox = document.getElementById('is_loan');
+    const loanFields = document.getElementById('loan-fields');
+    loanCheckbox.addEventListener('change', function() {
+        if(this.checked) {
+            loanFields.classList.remove('hidden');
+        } else {
+            loanFields.classList.add('hidden');
+        }
+    });
+
+    // Form Submission & Animations
+    const expenseForm = document.getElementById('expenseForm');
+    expenseForm.addEventListener('submit', function(e) {
+        // Play sound
+        clinkSound.play().catch(console.error);
+    });
+</script>
+{% endblock %}
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -43,3 +125,4 @@
     </script>
 </body>
 </html>
+

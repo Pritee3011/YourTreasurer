@@ -13,9 +13,46 @@ body {
     background-color: var(--bg);
     color: var(--text);
     margin: 0;
+
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    height: 100%;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+}
+
+body {
+    min-height: 100%;
+    width: 100%;
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background-color: var(--blue-light);
+    color: var(--navy-dark);
+    overflow-x: hidden;
+    display: block; /* Ensure it's not flex-locking the viewport */
+}
+
+/* --- 2. DYNAMIC BACKGROUND LAYERS --- */
+/* This layer holds your bg.svg */
+.dynamic-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -3; /* Bottom Layer */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-color: var(--blue-light);
+
     display: flex;
     flex-direction: column;
     align-items: center;
+
 }
 
 .container {
@@ -91,10 +128,59 @@ input, select, textarea {
 
 .loan-item {
     display: flex;
+
+    justify-content: center;
+    align-items: flex-start; /* Correct for scrolling long content */
+    min-height: 100vh;
+    width: 100%;
+    padding: 100px 20px 80px 20px; /* Buffer for navbar/footer */
+    text-align: center;
+    z-index: 5;
+}
+
+.content-container {
+    animation: float 5s ease-in-out infinite;
+}
+
+.title {
+    font-size: clamp(2.5rem, 12vw, 6.5rem);
+    color: var(--navy-dark);
+    font-weight: 800;
+    line-height: 0.85;
+    letter-spacing: -3px;
+    margin: 0;
+}
+
+.subtitle {
+    font-size: clamp(0.9rem, 4vw, 1.4rem);
+    color: var(--blue-mid);
+    margin-top: 10px;
+    font-weight: 500;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+}
+
+/* --- 7. FOOTER --- */
+.common-footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    text-align: center;
+    padding: 15px;
+    background: var(--navy-dark);
+    color: white;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    z-index: 10;
+
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid #334155;
     padding: 10px 0;
+
 }
 
 .loan-item:last-child { border: 0; }
