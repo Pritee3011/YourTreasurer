@@ -235,7 +235,6 @@ def login():
     payload = request.get_json(silent=True) or request.form
     name = (payload.get("name") or "").strip()
     password = payload.get("password") or ""
-    monthly_limit_input = payload.get("monthly_limit")
 
     if not name or not password:
         return jsonify({"success": False, "message": "Name and password are required."}), 400
@@ -253,63 +252,101 @@ def login():
         except PyMongoError:
             user_doc = get_local_user_by_name(name)
             use_local_store = True
-    now = datetime.utcnow()
 
-    if user_doc:
-        if not check_password_hash(user_doc.get("password", ""), password):
-            return jsonify({"success": False, "message": "Invalid credentials."}), 401
-
-        if use_local_store:
-            user_doc = maybe_reset_cycle_local(user_doc)
-            session["user_id"] = f"local:{user_doc['_id']}"
-        else:
-            try:
-                user_doc = maybe_reset_cycle(user_doc)
-            except PyMongoError:
-                return jsonify({"success": False, "message": "Database unavailable. Please try again shortly."}), 503
-            session["user_id"] = str(user_doc["_id"])
-        session["user_name"] = user_doc["name"]
-
+    if not user_doc:
         return jsonify(
             {
-                "success": True,
-                "message": "Login successful.",
-                "user": build_user_payload(user_doc),
-                "storage": "local" if use_local_store else "atlas",
-                "redirect_url": url_for("home"),
+                "success": False,
+                "needs_signup": True,
+                "message": "User not found. Please set your monthly budget to create profile.",
+                "prefill_name": name,
             }
-        )
+        ), 404
+
+    if not check_password_hash(user_doc.get("password", ""), password):
+        return jsonify({"success": False, "message": "Invalid credentials."}), 401
+
+    if use_local_store:
+        user_doc = maybe_reset_cycle_local(user_doc)
+        session["user_id"] = f"local:{user_doc['_id']}"
+    else:
+        try:
+            user_doc = maybe_reset_cycle(user_doc)
+        except PyMongoError:
+            return jsonify({"success": False, "message": "Database unavailable. Please try again shortly."}), 503
+        session["user_id"] = str(user_doc["_id"])
+    session["user_name"] = user_doc["name"]
+
+    return jsonify(
+        {
+            "success": True,
+            "message": "Login successful.",
+            "user": build_user_payload(user_doc),
+            "storage": "local" if use_local_store else "atlas",
+            "redirect_url": url_for("home"),
+        }
+    )
+
+
+@app.route("/signup", methods=["POST"])
+def signup():
+    payload = request.get_json(silent=True) or request.form
+    name = (payload.get("name") or "").strip()
+    password = payload.get("password") or ""
+    monthly_limit_input = payload.get("monthly_limit")
+
+    if not name or not password:
+        return jsonify({"success": False, "message": "Name and password are required."}), 400
+    if len(name) < 3:
+        return jsonify({"success": False, "message": "Name must be at least 3 characters."}), 400
+    if not is_password_valid(password):
+        return jsonify({"success": False, "message": PASSWORD_RULES_TEXT}), 400
 
     try:
         monthly_limit = float(monthly_limit_input) if monthly_limit_input not in (None, "") else 0.0
     except ValueError:
         return jsonify({"success": False, "message": "Monthly limit must be a number."}), 400
+    if monthly_limit <= 0:
+        return jsonify({"success": False, "message": "Monthly limit must be greater than 0."}), 400
 
-    new_user = {
-        "name": name,
-        "password": generate_password_hash(password),
-        "monthly_limit": monthly_limit,
-        "current_spend": 0.0,
-        "start_date": now,
-    }
+    use_local_store = not is_mongo_available()
     if use_local_store:
-        local_user = {
-            "_id": str(uuid4()),
-            "name": name,
-            "password": new_user["password"],
-            "monthly_limit": monthly_limit,
-            "current_spend": 0.0,
-            "start_date": now.isoformat(),
-        }
-        upsert_local_user(local_user)
-        session["user_id"] = f"local:{local_user['_id']}"
+        existing_user = get_local_user_by_name(name)
     else:
         try:
-            insert_result = users_collection().insert_one(new_user)
+            existing_user = users_collection().find_one({"name": name})
         except PyMongoError:
-            return jsonify({"success": False, "message": "Database unavailable. Please try again shortly."}), 503
-        session["user_id"] = str(insert_result.inserted_id)
-    session["user_name"] = name
+            existing_user = get_local_user_by_name(name)
+            use_local_store = True
+    if existing_user:
+        return jsonify({"success": False, "message": "User already exists. Please login."}), 409
+
+    now = datetime.utcnow()
+    try:
+        new_user = {
+            "name": name,
+            "password": generate_password_hash(password),
+            "monthly_limit": monthly_limit,
+            "current_spend": 0.0,
+            "start_date": now,
+        }
+        if use_local_store:
+            local_user = {
+                "_id": str(uuid4()),
+                "name": name,
+                "password": new_user["password"],
+                "monthly_limit": monthly_limit,
+                "current_spend": 0.0,
+                "start_date": now.isoformat(),
+            }
+            upsert_local_user(local_user)
+            session["user_id"] = f"local:{local_user['_id']}"
+        else:
+            insert_result = users_collection().insert_one(new_user)
+            session["user_id"] = str(insert_result.inserted_id)
+        session["user_name"] = name
+    except PyMongoError:
+        return jsonify({"success": False, "message": "Database unavailable. Please try again shortly."}), 503
 
     return jsonify(
         {

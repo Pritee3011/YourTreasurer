@@ -81,6 +81,10 @@
             color: var(--navy-dark);
             font-size: 0.95rem;
         }
+
+        .profile-stats[hidden] {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -126,18 +130,18 @@
                     <label for="monthly_limit">Monthly Limit (optional for first login)</label>
                     <input id="monthly_limit" name="monthly_limit" type="number" step="0.01" min="0" placeholder="e.g. 12000">
                 </div>
-                <button type="submit">Login / Create Profile</button>
+                <button id="submit-btn" type="submit">Login</button>
             </form>
 
             <div id="status" class="status"></div>
 
-            {% if user %}
-            <div class="profile-stats">
-                <strong>Signed in as:</strong> {{ user.name }}<br>
-                <strong>Monthly Limit:</strong> {{ user.monthly_limit }}<br>
-                <strong>Current Spend:</strong> {{ user.current_spend }}
+            <div id="profile-stats" class="profile-stats" hidden>
+                <strong>Signed in as:</strong> <span id="stat-name">-</span><br>
+                <strong>Monthly Limit:</strong> <span id="stat-limit">-</span><br>
+                <strong>Current Spend:</strong> <span id="stat-spend">-</span><br><br>
+                <button id="continue-btn" type="button">Continue</button>
             </div>
-            {% endif %}
+
         </section>
     </div>
 
@@ -152,6 +156,16 @@
         const backdrop = document.getElementById('menu-backdrop');
         const loginForm = document.getElementById('login-form');
         const statusNode = document.getElementById('status');
+        const submitBtn = document.getElementById('submit-btn');
+        const monthlyLimitInput = document.getElementById('monthly_limit');
+        const profileStats = document.getElementById('profile-stats');
+        const statName = document.getElementById('stat-name');
+        const statLimit = document.getElementById('stat-limit');
+        const statSpend = document.getElementById('stat-spend');
+        const continueBtn = document.getElementById('continue-btn');
+        let mode = 'login';
+
+        monthlyLimitInput.closest('div').style.display = 'none';
 
         function toggleMenu() {
             sideNav.classList.toggle('open');
@@ -189,6 +203,7 @@
             event.preventDefault();
             statusNode.classList.remove('error');
             statusNode.textContent = 'Processing...';
+            profileStats.hidden = true;
 
             const formData = new FormData(loginForm);
             const payload = Object.fromEntries(formData.entries());
@@ -209,9 +224,18 @@
             }
 
             payload.name = trimmedName;
+            if (mode === 'signup') {
+                const monthlyLimit = Number(payload.monthly_limit);
+                if (!Number.isFinite(monthlyLimit) || monthlyLimit <= 0) {
+                    statusNode.classList.add('error');
+                    statusNode.textContent = 'Set a valid monthly budget greater than 0.';
+                    return;
+                }
+            }
 
             try {
-                const response = await fetch('/login', {
+                const endpoint = mode === 'signup' ? '/signup' : '/login';
+                const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -225,6 +249,12 @@
                 }
 
                 if (!response.ok || !data.success) {
+                    if (data.needs_signup) {
+                        mode = 'signup';
+                        monthlyLimitInput.closest('div').style.display = 'block';
+                        submitBtn.textContent = 'Create Profile';
+                        monthlyLimitInput.focus();
+                    }
                     statusNode.classList.add('error');
                     statusNode.textContent = data.message || 'Request failed. Please check your inputs and try again.';
                     return;
@@ -234,6 +264,15 @@
                 playUnlockChime();
 
                 const redirectUrl = data.redirect_url || '/';
+                if (mode === 'login' && data.user) {
+                    statName.textContent = data.user.name ?? '-';
+                    statLimit.textContent = data.user.monthly_limit ?? '-';
+                    statSpend.textContent = data.user.current_spend ?? '-';
+                    profileStats.hidden = false;
+                    continueBtn.onclick = () => window.location.href = redirectUrl;
+                    return;
+                }
+
                 setTimeout(() => window.location.href = redirectUrl, 450);
             } catch (error) {
                 statusNode.classList.add('error');
