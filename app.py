@@ -33,6 +33,7 @@ app.config["MONGO_URI"] = os.environ.get(
     "MONGO_URI",
     "mongodb://localhost:27017/yourtreasurer?serverSelectionTimeoutMS=1200&connectTimeoutMS=1200&socketTimeoutMS=1200",
 )
+app.config["MONGO_DBNAME"] = os.environ.get("MONGO_DBNAME", "yourtreasurer")
 mongo = PyMongo(app)
 
 app.config["MAIL_SERVER"] = "smtp.gmail.com"
@@ -47,6 +48,10 @@ LOCAL_USERS_FILE = os.path.join(app.root_path, "local_users.json")
 MONGO_AVAILABLE = None
 MONGO_LAST_CHECK = None
 MONGO_LAST_ERROR = ""
+PASSWORD_RULES_TEXT = (
+    "Password must be at least 8 characters and include uppercase, lowercase, "
+    "number, and special character."
+)
 
 # --- ASYNC BACKGROUND TASKS ---
 
@@ -61,7 +66,18 @@ def send_async_email(app, msg):
 
 
 def users_collection():
-    return mongo.db.users
+    db_name = app.config["MONGO_DBNAME"]
+    return mongo.cx[db_name]["users"]
+
+
+def is_password_valid(password):
+    if len(password) < 8:
+        return False
+    has_upper = any(char.isupper() for char in password)
+    has_lower = any(char.islower() for char in password)
+    has_digit = any(char.isdigit() for char in password)
+    has_special = any(not char.isalnum() for char in password)
+    return has_upper and has_lower and has_digit and has_special
 
 
 def is_mongo_available():
@@ -223,6 +239,10 @@ def login():
 
     if not name or not password:
         return jsonify({"success": False, "message": "Name and password are required."}), 400
+    if len(name) < 3:
+        return jsonify({"success": False, "message": "Name must be at least 3 characters."}), 400
+    if not is_password_valid(password):
+        return jsonify({"success": False, "message": PASSWORD_RULES_TEXT}), 400
 
     use_local_store = not is_mongo_available()
     if use_local_store:

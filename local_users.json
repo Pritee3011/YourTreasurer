@@ -46,5 +46,13 @@
     "monthly_limit": 0.0,
     "current_spend": 0.0,
     "start_date": "2026-04-10T05:07:35.431224"
+  },
+  {
+    "_id": "b36ee71f-9261-4823-a14a-3470d2f22e1a",
+    "name": "atlas_seed_user_1",
+    "password": "scrypt:32768:8:1$9h4QgyMO3CYbXD00$e9c00212e9c3e46a289355b0489a9086a2bc89f9dff7ea2f7b59c386f3925fb3d91439f1ed50bdad7ca457d78e107df82b74b955cb4fb7df8a99a4143af92a42",
+    "monthly_limit": 0.0,
+    "current_spend": 0.0,
+    "start_date": "2026-04-10T05:44:00.753350"
   }
 ]
