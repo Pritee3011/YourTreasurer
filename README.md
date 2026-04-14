@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 YourTreasurer 🏛️
 Digital CFO for Students | CommitVerse 2026 Submission
@@ -58,3 +59,7 @@ python app.py
 [x] Polish: Real-time Progress Bars & UI Animations
 
 Developed with ❤️ for CommitVerse 2026
+=======
+# YourTreasurer
+Digital CFO
+>>>>>>> b07e0850d1fb6d1544e409b5f85195f76824f5d8
