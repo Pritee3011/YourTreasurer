@@ -1,113 +1,46 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interval Spend | YourTreasurer</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
-    <style>
-        .card { max-width: 800px; margin: auto; padding: 30px; border-radius: 20px; background: rgba(255,255,255,0.9); box-shadow: 0 15px 35px rgba(15,40,84,.12); text-align: left; }
-        .card h1 { color: var(--navy-dark); margin-bottom: 20px; font-weight: 800; }
-        
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
-        .form-group { display: flex; flex-direction: column; }
-        .form-group label { font-weight: 600; margin-bottom: 8px; color: var(--navy-dark); }
-        .form-group input, .form-group select { padding: 12px; border: 1.5px solid #c9d9ef; border-radius: 10px; font-family: inherit; }
-        
-        .submit-btn { grid-column: span 2; padding: 14px; background: var(--navy-dark); color: white; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
-        .submit-btn:hover { transform: translateY(-2px); }
-
-        .recurring-list { margin-top: 40px; }
-        .recurring-item { background: white; padding: 20px; border-radius: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-left: 5px solid var(--navy-dark); }
-        .recurring-info h3 { margin: 0; color: var(--navy-dark); }
-        .recurring-info p { margin: 5px 0 0; color: var(--blue-mid); font-size: 0.9rem; }
-        .recurring-meta { text-align: right; }
-        .recurring-amount { font-size: 1.3rem; font-weight: 800; color: var(--navy-dark); }
-        .recurring-due { font-size: 0.85rem; color: #666; font-weight: 600; }
-        
-        @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } .submit-btn { grid-column: span 1; } }
-    </style>
-</head>
-<body>
-    <div class="brand-logo-top"><a href="/"><img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo"></a></div>
-    <button class="menu-trigger" id="menu-btn"><span>Menu</span></button>
-    <div class="menu-backdrop" id="menu-backdrop"></div>
-    <nav id="side-nav" class="side-nav">
-        <button class="close-btn" id="close-btn">&times;</button>
-        <div class="nav-links">
-            <a href="/">Home</a><a href="/my_profile">My Profile</a><a href="/my_expenses">My Expenses</a>
-            <a href="/analysis">Analysis</a><a href="/interval_spend" class="active">Interval Spend</a><a href="/about_us">About Us</a>
-        </div>
-    </nav>
-    <div class="dynamic-bg" style="background-image: url('{{ url_for('static', filename='images/interval.jpg') }}');"></div>
-    
-    <div class="main-layout-wrapper">
-        <section class="card">
-            <h1>Interval Spend Manager</h1>
-            <p style="margin-bottom: 25px;">Log your EMIs, Rent, and subscriptions to keep your budget on track.</p>
-
-            {% with messages = get_flashed_messages(with_categories=true) %}
-              {% if messages %}
-                {% for category, message in messages %}
-                  <div style="padding: 10px; margin-bottom: 20px; border-radius: 8px; background: {% if category == 'success' %}#e8f5e9{% else %}#ffebee{% endif %}; color: {% if category == 'success' %}#2e7d32{% else %}#c62828{% endif %};">
-                    {{ message }}
-                  </div>
-                {% endfor %}
-              {% endif %}
-            {% endwith %}
-
-            <form action="{{ url_for('add_recurring') }}" method="POST" class="form-grid">
-                <div class="form-group">
-                    <label for="item_name">Payment Name</label>
-                    <input type="text" id="item_name" name="item_name" placeholder="e.g. House Rent" required>
-                </div>
-                <div class="form-group">
-                    <label for="amount">Monthly Amount (₹)</label>
-                    <input type="number" id="amount" name="amount" step="0.01" placeholder="e.g. 15000" required>
-                </div>
-                <div class="form-group">
-                    <label for="due_day">Due Date (Day of Month)</label>
-                    <select id="due_day" name="due_day" required>
-                        {% for day in range(1, 32) %}
-                        <option value="{{ day }}">{{ day }}{% if day in [1, 21, 31] %}st{% elif day in [2, 22] %}nd{% elif day in [3, 23] %}rd{% else %}th{% endif %}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="reminder_days">Remind me before (Days)</label>
-                    <input type="number" id="reminder_days" name="reminder_days" min="1" max="10" value="3" required>
-                </div>
-                <button type="submit" class="submit-btn">+ Log Recurring Payment</button>
-            </form>
-
-            <div class="recurring-list">
-                <h2>Active Subscriptions & EMIs</h2>
-                {% if recurrings %}
-                    {% for item in recurrings %}
-                    <div class="recurring-item">
-                        <div class="recurring-info">
-                            <h3>{{ item.item_name }}</h3>
-                            <p>Reminder set: {{ item.reminder_days }} days before due</p>
-                        </div>
-                        <div class="recurring-meta">
-                            <div class="recurring-amount">₹{{ "{:,.2f}".format(item.amount) }}</div>
-                            <div class="recurring-due">Due on: {{ item.due_day }}{% if item.due_day in [1, 21, 31] %}st{% elif item.due_day in [2, 22] %}nd{% elif item.due_day in [3, 23] %}rd{% else %}th{% endif %} of month</div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <p style="text-align: center; color: #999; margin-top: 20px;">No recurring payments logged yet.</p>
-                {% endif %}
-            </div>
-        </section>
-    </div>
-
-    <footer class="common-footer">YourTreasurer &copy; 2026 | Helping Hand</footer>
-    <script>
-        const menuBtn=document.getElementById('menu-btn'),closeBtn=document.getElementById('close-btn'),sideNav=document.getElementById('side-nav'),backdrop=document.getElementById('menu-backdrop');
-        function toggleMenu(){sideNav.classList.toggle('open');backdrop.classList.toggle('active');}
-        menuBtn.addEventListener('click',toggleMenu);closeBtn.addEventListener('click',toggleMenu);backdrop.addEventListener('click',toggleMenu);
-    </script>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Recurring Spend{% endblock %}
+{% block content %}
+<section class="card">
+    <h1>Interval Spend Manager</h1>
+    <form action="/add_recurring" method="post" class="grid-2">
+        <label>Payment name
+            <input name="item_name" required placeholder="Rent / EMI / Mess Fee">
+        </label>
+        <label>Amount
+            <input name="amount" type="number" min="1" step="0.01" required>
+        </label>
+        <label>Due day (1-28)
+            <input name="due_day" type="number" min="1" max="28" required>
+        </label>
+        <label>Remind me before (days)
+            <input name="reminder_days" type="number" min="1" max="10" value="3" required>
+        </label>
+        <button class="btn" type="submit">Add recurring spend</button>
+    </form>
+</section>
+<section class="card">
+    <h2>Current Recurring Payments</h2>
+    {% if not recurrings %}
+    <p>No recurring items yet.</p>
+    {% endif %}
+    {% for item in recurrings %}
+    <article class="expense-card {% if item.days_left <= 3 %}due-soon{% endif %}">
+        <strong>{{ item.item_name }}</strong> - Rs. {{ "%.2f"|format(item.amount) }}<br>
+        Due day: {{ item.due_day }} | Reminder: {{ item.reminder_days }} day(s) before | Days left: {{ item.days_left }}
+    </article>
+    {% endfor %}
+</section>
+<style>
+.due-soon {
+    border-color: #f87171;
+    box-shadow: 0 0 10px rgba(248, 113, 113, 0.45);
+    animation: pulseRed 1.2s infinite;
+}
+@keyframes pulseRed {
+    0% { box-shadow: 0 0 2px rgba(248, 113, 113, 0.35); }
+    50% { box-shadow: 0 0 16px rgba(248, 113, 113, 0.9); }
+    100% { box-shadow: 0 0 2px rgba(248, 113, 113, 0.35); }
+}
+</style>
+{% endblock %}

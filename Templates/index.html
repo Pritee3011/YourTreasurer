@@ -1,19 +1,21 @@
-
 {% extends "base.html" %}
-
+{% block title %}Home{% endblock %}
 {% block content %}
-<div class="content-container">
-    <h1 class="title">Dashboard</h1>
-    <p class="subtitle">Welcome, {{ session.username }}!</p>
-
-    <!-- Daily Expense & Loan Entry Form -->
-    <div class="dashboard-panel glass-form-wrapper">
-        <h2>Log an Expense</h2>
-        <form id="expenseForm" action="{{ url_for('add_expense') }}" method="POST" class="glass-form">
-            <div class="form-group">
-                <label for="category">Category</label>
-                <select id="category" name="category" required>
-                    <option value="" disabled selected>Select Category</option>
+<section class="grid-2">
+    <article class="card">
+        <h2 id="home-title">Dashboard</h2>
+        <p>User: <strong>{{ session.get("user_name", "Unknown") }}</strong></p>
+        <div class="progress-wrap">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+        <p id="progress-text">Rs. 0 / Rs. 0</p>
+        <p id="progress-meta"></p>
+    </article>
+    <article class="card">
+        <h2>Track Expense</h2>
+        <form id="expense-form" enctype="multipart/form-data">
+            <label>Category
+                <select name="category" required>
                     <option value="Junk Food">Junk Food</option>
                     <option value="Educational">Educational</option>
                     <option value="Travel">Travel</option>
@@ -22,107 +24,92 @@
                     <option value="Healthy Food">Healthy Food</option>
                     <option value="Other">Other</option>
                 </select>
-            </div>
-            
-            <div class="form-group">
-                <label for="amount">Amount (₹)</label>
-                <input type="number" id="amount" name="amount" step="0.01" required>
-            </div>
-
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" id="is_loan" name="is_loan" value="yes"> Is it a Loan?
-                </label>
-            </div>
-
-            <!-- Hidden Loan Fields -->
+            </label>
+            <label>Amount
+                <input type="number" name="amount" min="1" step="0.01" required>
+            </label>
+            <label>Spent At
+                <input type="text" name="spent_at" placeholder="Cafe / Store / UPI">
+            </label>
+            <label>Receipt (Cloudinary upload)
+                <input type="file" name="receipt" accept="image/*">
+            </label>
+            <label><input type="checkbox" id="is-loan" name="is_loan" value="yes"> Is it a loan?</label>
             <div id="loan-fields" class="hidden">
-                <div class="form-group">
-                    <label for="friend_email">Friend's Email</label>
-                    <input type="email" id="friend_email" name="friend_email">
-                </div>
-                <div class="form-group">
-                    <label for="friend_relationship">Relationship</label>
-                    <input type="text" id="friend_relationship" name="friend_relationship" placeholder="e.g. Roommate">
-                </div>
+                <label>Friend Name <input type="text" name="friend_name"></label>
+                <label>Friend Email <input type="email" name="friend_email"></label>
+                <label>Relationship <input type="text" name="friend_relationship"></label>
             </div>
-
-            <button type="submit" class="submit-btn" id="trackBtn">
-                <span id="btnText">Track Now</span>
-            </button>
+            <button class="btn" id="track-btn" type="submit">Track Now</button>
+            <p id="expense-status"></p>
         </form>
-    </div>
-</div>
+    </article>
+</section>
 {% endblock %}
-
 {% block scripts %}
 <script>
-    // Audio context
-    const clinkSound = new Audio("{{ url_for('static', filename='audio/clink.mp3') }}");
-    
-    // Toggle Loan Fields
-    const loanCheckbox = document.getElementById('is_loan');
-    const loanFields = document.getElementById('loan-fields');
-    loanCheckbox.addEventListener('change', function() {
-        if(this.checked) {
-            loanFields.classList.remove('hidden');
-        } else {
-            loanFields.classList.add('hidden');
-        }
-    });
+const bar = document.getElementById("progress-bar");
+const text = document.getElementById("progress-text");
+const meta = document.getElementById("progress-meta");
+const homeTitle = document.getElementById("home-title");
+const form = document.getElementById("expense-form");
+const loanCheckbox = document.getElementById("is-loan");
+const loanFields = document.getElementById("loan-fields");
+const statusNode = document.getElementById("expense-status");
+const trackBtn = document.getElementById("track-btn");
 
-    // Form Submission & Animations
-    const expenseForm = document.getElementById('expenseForm');
-    expenseForm.addEventListener('submit', function(e) {
-        // Play sound
-        clinkSound.play().catch(console.error);
-    });
+function tone(freq, dur = 0.16) {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.frequency.value = freq;
+    gain.gain.value = 0.08;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + dur);
+}
+
+function playCoinClink() { tone(860, 0.1); setTimeout(() => tone(1140, 0.1), 90); }
+
+async function loadProgress() {
+    const response = await fetch("/api/progress");
+    if (!response.ok) return;
+    const data = await response.json();
+    const pct = Math.max(0, Math.min(100, data.progress || 0));
+    bar.style.width = `${pct}%`;
+    bar.style.background = pct < 60 ? "#4ade80" : pct < 85 ? "#facc15" : "#f87171";
+    text.textContent = `Rs. ${Number(data.spent || 0).toFixed(2)} / Rs. ${Number(data.limit || 0).toFixed(2)}`;
+    meta.textContent = `${Number(data.progress || 0).toFixed(1)}% budget used`;
+    homeTitle.style.color = data.over_budget ? "#f87171" : "";
+}
+
+loanCheckbox.addEventListener("change", () => {
+    loanFields.classList.toggle("hidden", !loanCheckbox.checked);
+});
+
+form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    statusNode.textContent = "Saving...";
+    trackBtn.disabled = true;
+    const body = new FormData(form);
+    const response = await fetch("/add_expense", { method: "POST", body });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.success) {
+        statusNode.textContent = data.message || "Failed to save expense.";
+        trackBtn.disabled = false;
+        return;
+    }
+    playCoinClink();
+    statusNode.textContent = "Expense logged.";
+    form.reset();
+    loanFields.classList.add("hidden");
+    await loadProgress();
+    trackBtn.disabled = false;
+});
+
+loadProgress();
 </script>
 {% endblock %}
-
-<!DOCTYPE html>
-<html>
-<head>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <title>Dashboard</title>
-</head>
-<body>
-    <div class="nav">
-        <h2>💰 Treasurer</h2>
-        {% if user %}<a href="/logout">Logout</a>{% else %}<a href="/login">Login</a>{% endif %}
-    </div>
-
-    <div class="container">
-        <div class="card" style="text-align: center;">
-            <h3>Monthly Spending</h3>
-            <div class="progress-container">
-                <div class="progress-bar" id="bar"></div>
-            </div>
-            <h2 id="text">₹0 / ₹0</h2>
-            <p id="status-msg" style="font-size: 0.9rem; color: #94a3b8;"></p>
-        </div>
-
-        <a href="/my_expenses" class="btn" style="display: block; text-align: center; text-decoration: none;">View All Expenses</a>
-    </div>
-
-    <script>
-        function load(){
-            fetch('/api/progress').then(r=>r.json()).then(d=>{
-                let p = d.progress > 100 ? 100 : d.progress;
-                let bar = document.getElementById("bar");
-                bar.style.width = p + "%";
-
-                if(p < 60) bar.style.background = "#22c55e";
-                else if(p < 85) bar.style.background = "#f59e0b";
-                else bar.style.background = "#ef4444";
-
-                document.getElementById("text").innerHTML = `₹${d.spent} / ₹${d.limit}`;
-                document.getElementById("status-msg").innerHTML = `${d.progress.toFixed(1)}% of budget used`;
-            });
-        }
-        load();
-        setInterval(load, 5000);
-    </script>
-</body>
-</html>
-
