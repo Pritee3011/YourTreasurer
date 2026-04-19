@@ -1,19 +1,18 @@
-# Use the official Python image
 FROM python:3.9-slim
 
-# Set the working directory
 WORKDIR /app
 
-# Copy requirements and install dependencies
-# This ensures consistency across environments 
+# Crucial: Copy requirements first to leverage Docker cache
 COPY requirements.txt .
+
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the entire project
+# Copy the rest of your code (app.py, etc.)
 COPY . .
 
-# Set the Port for Render (Port 5000)
+# Set Port for Render
 ENV PORT=5000
 
-# Start the application using Gunicorn
+# Use Gunicorn to run the app
 CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:$PORT app:app"]
