@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: your-treasurer-production
+    env: docker # Tells Render to use your Dockerfile
+    plan: free
+    region: ohio
+    envVars:
+      - key: MONGO_URI
+        sync: false # You will manually add this in the Render UI
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: MAIL_USER
+        sync: false
