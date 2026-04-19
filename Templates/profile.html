@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YourTreasurer - Profile Gateway</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/Style.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* Specific Centering and Sizing for this Page */
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Poppins', sans-serif;
+            overflow: hidden;
+        }
+
+        .gateway-container {
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--blue-light);
+            border-radius: 25px;
+            padding: 50px 40px;
+            text-align: center;
+            box-shadow: 0 25px 45px rgba(0,0,0,0.2);
+        }
+
+        h2 {
+            color: var(--navy-dark);
+            font-size: 2.2rem;
+            margin-bottom: 30px;
+            letter-spacing: 2px;
+            text-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        /* Bigger, bolder input boxes */
+        input[type="text"], 
+        input[type="password"], 
+        input[type="number"] {
+            width: 100%;
+            padding: 18px 20px;
+            background: rgba(162, 211, 222, 0.5);
+            border: 1px solid var(--blue-light);
+            border-radius: 12px;
+            color: var(--navy-dark);
+            font-size: 1.1rem;
+            outline: none;
+            transition: 0.3s;
+            box-sizing: border-box; /* Ensures padding doesn't affect width */
+        }
+
+        input:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #00d4ff;
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-glow {
+            width: 100%;
+            padding: 18px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #fff;
+            background: linear-gradient(45deg, #00d4ff, #0055ff);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.4s;
+            box-shadow: 0 10px 20px rgba(0, 85, 255, 0.3);
+        }
+
+        .btn-glow:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(0, 85, 255, 0.5);
+        }
+
+        .msg-box {
+            margin-top: 25px;
+            color: #00d4ff;
+            font-weight: 500;
+            min-height: 30px;
+        }
+
+        p { color: #ccc; margin-bottom: 20px; }
+    </style>
+</head>
+<body class="shimmer-bg">
+
+    <div class="gateway-container">
+        <div class="glass-card">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" width="80" style="margin-bottom: 15px;" alt="Logo">
+            <h2>YourTreasurer</h2>
+            
+            <form id="profileForm">
+                <div class="input-group">
+                    <input type="text" id="username" placeholder="Username" required>
+                    <small id="nameError" style="color: #ff4d4d; display: none; margin-top: 8px;">Min 3 characters required!</small>
+                </div>
+                
+                <div class="input-group">
+                    <input type="password" id="password" placeholder="Password" required>
+                </div>
+
+                <div id="budgetStatus">
+                    <button type="button" id="verifyBtn" class="btn-glow">Access Vault</button>
+                </div>
+
+                <div id="newBudgetSection" style="display: none;">
+                    <p>Cycle ended. Reset your limits:</p>
+                    <div class="input-group">
+                        <input type="number" id="monthly_limit" placeholder="Monthly Limit (₹)">
+                    </div>
+                    <button type="button" id="saveBudgetBtn" class="btn-glow">Start New Journey</button>
+                </div>
+            </form>
+
+            <div id="messageArea" class="msg-box"></div>
+        </div>
+    </div>
+
+    <script>
+        function validateName() {
+            const name = $('#username').val();
+            if (name.length < 3) {
+                $('#nameError').fadeIn();
+                return false;
+            }
+            $('#nameError').hide();
+            return true;
+        }
+
+        $('#verifyBtn').click(function() {
+            if (!validateName()) return;
+
+            $.ajax({
+                url: '/verify_profile',
+                type: 'POST',
+                data: JSON.stringify({
+                    username: $('#username').val(),
+                    password: $('#password').val()
+                }),
+                contentType: 'application/json',
+                success: function(response) {
+                    if (response.status === 'expired' || response.status === 'new') {
+                        $('#budgetStatus').hide();
+                        $('#newBudgetSection').slideDown();
+                        $('#messageArea').text(response.message);
+                    } else if (response.status === 'active') {
+                        localStorage.setItem('username', $('#username').val());
+                        $('#messageArea').html(`<h3>Authentication Successful!</h3><p>Active Budget: <b>₹${response.budget}</b></p>`);
+                        playSuccessSound();
+                    }
+                },
+                error: function(err) {
+                    $('#messageArea').html("<span style='color: #ff4d4d;'>Access Denied: Invalid Credentials</span>");
+                }
+            });
+        });
+
+        $('#saveBudgetBtn').click(function() {
+            $.ajax({
+                url: '/set_budget',
+                type: 'POST',
+                data: JSON.stringify({
+                    username: $('#username').val(),
+                    password: $('#password').val(),
+                    limit: $('#monthly_limit').val()
+                }),
+                contentType: 'application/json',
+                success: function(response) {
+                    localStorage.setItem('username', $('#username').val());
+                    $('#newBudgetSection').hide();
+                    $('#messageArea').html(`<h3>Success!</h3><p>New Limit: ₹${$('#monthly_limit').val()}</p>`);
+                    setTimeout(() => { window.location.href = '/'; }, 2000);
+                }
+            });
+        });
+
+        function playSuccessSound() {
+            new Audio('/static/sounds/unlock.mp3').play().catch(()=>{});
+        }
+    </script>
+</body>
+</html>

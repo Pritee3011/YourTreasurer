@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>YourTreasurer - Log Expense</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/Style.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body { background: #BDE8F5; font-family: 'Poppins', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { width: 100%; max-width: 500px; padding: 20px; }
+        .expense-card { background: white; border-radius: 25px; padding: 40px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); text-align: center; }
+        
+        h2 { color: #002366; margin-bottom: 25px; font-weight: 700; }
+        
+        .input-box { 
+            width: 100%; padding: 15px; margin: 12px 0; 
+            border: 2px solid #e1e8ed; border-radius: 12px; 
+            font-size: 1rem; outline: none; transition: 0.3s;
+            box-sizing: border-box;
+        }
+        
+        .input-box:focus { border-color: #00d4ff; background: #fff; }
+
+        .loan-section { 
+            display: none; background: #f8faff; padding: 20px; 
+            border-radius: 15px; margin-top: 15px; border: 1px dashed #0055ff;
+        }
+
+        .btn-log { 
+            background: linear-gradient(45deg, #002366, #0055ff); 
+            color: white; border: none; padding: 18px; 
+            border-radius: 12px; cursor: pointer; width: 100%; 
+            font-size: 1.1rem; font-weight: 600; margin-top: 20px;
+        }
+
+        .btn-history {
+            display: inline-block; margin-top: 20px; color: #0055ff;
+            text-decoration: none; font-weight: 500; font-size: 0.9rem;
+        }
+
+        .checkbox-container { display: flex; align-items: center; gap: 10px; margin: 15px 0; color: #444; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="expense-card">
+        <h2>Add Expense</h2>
+        <form id="expenseForm">
+            <select id="category" class="input-box" required>
+                <option value="" disabled selected>Select Category</option>
+                <option value="Junk Food">🍔 Junk Food</option>
+                <option value="Travelling">🚗 Travelling</option>
+                <option value="Educational">📚 Educational</option>
+                <option value="Hostel Rent">🏠 Hostel Rent</option>
+                <option value="Lifestyle">✨ Lifestyle</option>
+            </select>
+            
+            <input type="number" id="amount" class="input-box" placeholder="Amount (₹)" required>
+            <input type="text" id="description" class="input-box" placeholder="Description (e.g. Pizza with team)" required>
+
+            <div class="checkbox-container">
+                <input type="checkbox" id="is_loan" style="width: 18px; height: 18px;"> 
+                <label for="is_loan">Is this a loan to Friend/Family?</label>
+            </div>
+
+            <div id="loanFields" class="loan-section">
+                <p style="font-size: 0.8rem; color: #555; margin-top: 0;">We will send an automated reminder email.</p>
+                <input type="email" id="friend_email" class="input-box" placeholder="Friend's Email Address">
+                <input type="number" id="interval" class="input-box" placeholder="Reminder Interval (Days)">
+            </div>
+
+            <button type="submit" class="btn-log">Log Transaction</button>
+        </form>
+
+        <a href="/history" class="btn-history">View Full Vault History →</a>
+    </div>
+</div>
+
+<script>
+    // 1. Get the unique user key from the first login
+    const currentUsername = localStorage.getItem('username');
+
+    // Redirect if they skipped the login
+    if (!currentUsername) {
+        window.location.href = '/my_profile';
+    }
+
+    // 2. Toggle Loan Section
+    $('#is_loan').change(function() {
+        if(this.checked) {
+            $('#loanFields').slideDown();
+            $('#friend_email').attr('required', true);
+        } else {
+            $('#loanFields').slideUp();
+            $('#friend_email').removeAttr('required');
+        }
+    });
+
+    // 3. Submit Expense to Backend
+    $('#expenseForm').submit(function(e) {
+        e.preventDefault();
+        
+        const payload = {
+            username: currentUsername,
+            category: $('#category').val(),
+            amount: $('#amount').val(),
+            description: $('#description').val(),
+            is_loan: $('#is_loan').is(':checked'),
+            email: $('#friend_email').val(),
+            interval: $('#interval').val()
+        };
+
+        $.ajax({
+            url: '/add_expense',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(payload),
+            success: function(res) {
+                alert("Vault Updated Successfully!");
+                window.location.href = '/history'; // Go to history to see the new entry
+            },
+            error: function() {
+                alert("Failed to log expense. Check your connection.");
+            }
+        });
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>YourTreasurer - Transaction History</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/Style.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body { background: #BDE8F5; font-family: 'Poppins', sans-serif; }
+        .history-container { max-width: 800px; margin: 50px auto; padding: 20px; }
+        
+        .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        
+        .history-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 8px solid #002366; /* Default Navy */
+            transition: transform 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .history-card:hover { transform: scale(1.01); }
+
+        /* Status Colors */
+        .pending-border { border-left-color: #ff4d4d !important; } /* Red for Pending Loan */
+        .completed-border { border-left-color: #1db954 !important; } /* Green for Paid/Personal */
+
+        .details h4 { margin: 0; color: #002366; font-size: 1.2rem; }
+        .details p { margin: 5px 0; color: #666; font-size: 0.9rem; }
+        
+        .amount-tag { font-size: 1.3rem; font-weight: 700; color: #333; }
+        
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-red { background: #ffe5e5; color: #ff4d4d; }
+        .badge-green { background: #e7f9ed; color: #1db954; }
+
+        .btn-back { 
+            text-decoration: none; color: #002366; font-weight: 600; 
+            display: flex; align-items: center; gap: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="history-container">
+    <div class="header-flex">
+        <a href="/" class="btn-back">← Dashboard</a>
+        <h2 style="color: #002366; margin: 0;">Vault History</h2>
+        <div id="userBadge" style="color: #666; font-size: 0.9rem;"></div>
+    </div>
+
+    <div id="historyList">
+        <p style="text-align: center; color: #999;">Loading your financial timeline...</p>
+    </div>
+</div>
+
+<script>
+    const loggedUser = localStorage.getItem('username');
+
+    if (!loggedUser) {
+        window.location.href = '/my_profile';
+    } else {
+        $('#userBadge').text("Account: " + loggedUser);
+        loadHistory();
+    }
+
+    function loadHistory() {
+        $.get('/get_history/' + loggedUser, function(data) {
+            let html = '';
+            if (data.length === 0) {
+                html = '<div style="text-align:center; padding:50px;">No transactions found. Start logging!</div>';
+            }
+
+            data.forEach(item => {
+                // Determine color logic based on your requirements
+                let isLoan = item.is_loan;
+                let isPending = item.status === 'pending';
+                
+                let borderClass = isPending ? 'pending-border' : 'completed-border';
+                let badgeClass = isPending ? 'badge-red' : 'badge-green';
+                let statusText = isPending ? 'Pending Return' : 'Settled';
+                
+                // Only show checkbox if it is a pending loan
+                let actionHtml = isPending ? 
+                    `<input type="checkbox" title="Mark as Received" onclick="markAsDone('${item._id}')" style="transform: scale(1.3); cursor:pointer;">` : 
+                    `<span class="status-badge ${badgeClass}">${statusText}</span>`;
+
+                html += `
+                    <div class="history-card ${borderClass}">
+                        <div class="details">
+                            <h4>${item.category}</h4>
+                            <p>${item.description}</p>
+                            <small>${new Date(item.timestamp).toLocaleDateString()}</small>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="amount-tag">₹${item.amount}</div>
+                            <div style="margin-top: 10px;">
+                                ${actionHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            $('#historyList').hide().html(html).fadeIn(500);
+        });
+    }
+
+    function markAsDone(id) {
+        if(confirm("Mark this loan as completed? Automatic reminders will stop.")) {
+            $.ajax({
+                url: '/update_loan_status',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ id: id }),
+                success: function() {
+                    loadHistory(); // Refresh the list with animation
+                }
+            });
+        }
+    }
+</script>
+
+</body>
+</html>
