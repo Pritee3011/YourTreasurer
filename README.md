@@ -1,60 +1,64 @@
+# YourTreasurer 🏛️ Digital CFO for Students
+**Course:** 20PECE 601A: DevOps Fundamentals  
+[cite_start]**Institution:** MKSSS's Cummins College of Engineering for Women, Pune [cite: 3, 4]  
+[cite_start]**Semester:** II, 2025-2026 [cite: 6]
 
-YourTreasurer 🏛️
-Digital CFO for Students | CommitVerse 2026 Submission
+## 🎯 1. Problem Definition & Project Planning
+**Problem:** University students often struggle with manual expense tracking, leading to budget overruns and forgotten peer-to-peer (P2P) social liabilities.  
+**Objectives:** * Automate budget tracking with a 30-day reset logic.
+* Implement a "Financial Bodyguard" via automated cloud-native mail alerts.
+* Provide digital receipt vaulting for audit-ready compliance.
+* Visualize spending trends using interactive dashboards.
 
-YourTreasurer is a high-impact personal finance tool designed to act as a "financial bodyguard" for students. Beyond simple tracking, it manages monthly allowances, handles social liabilities (peer-to-peer loans), and ensures audit-ready compliance for campus life through automated logic and cloud integration.
+## 🛠️ 2. DevOps Lifecycle & Tech Stack
+[cite_start]This project implements a complete CI/CD pipeline to automate the software lifecycle[cite: 14].
 
-✨ Key Features
-Guardian Mail Logic: Automated Flask-Mail alerts triggered at 10%, 5%, and 0% budget thresholds.
+| Stage | Tool | Implementation Detail |
+| :--- | :--- | :--- |
+| **Version Control** | Git / GitHub | [cite_start]Maintained with regular commits and branching strategy[cite: 15, 19]. |
+| **Build Automation** | pip / requirements.txt | [cite_start]Automated dependency resolution within the CI pipeline[cite: 16, 19]. |
+| **Continuous Integration** | GitHub Actions | [cite_start]Automated linting and unit testing on every push[cite: 16]. |
+| **Containerization** | Docker | [cite_start]Environment isolation via Dockerfile for consistent deployment[cite: 17, 19]. |
+| **Cloud Deployment** | Render | [cite_start]Automated Continuous Deployment (CD) to cloud staging[cite: 17, 19]. |
 
-30-Day Auto-Reset: Smart temporal logic that archives current data and resets the budget cycle every month.
+## ✨ Key Features
+* **Guardian Mail Logic:** Cloud-native email alerts via **SendGrid API** (replaces SMTP for cloud reliability).
+* **30-Day Auto-Reset:** Smart temporal logic that resets the budget cycle monthly.
+* **Loan Handshake:** Automated P2P loan notifications sent to friends.
+* **Receipt Vault:** Secure **Cloudinary** integration for digital invoice storage.
+* **Visual Intelligence:** Dynamic **Chart.js** dashboards for trend analysis.
 
-Loan Handshake: Automated email notifications sent to friends immediately when a loan is logged to ensure transparency.
+## 🚀 Setup & Installation
 
-Receipt Vault: Secure Cloudinary integration for digital invoice storage and retrieval.
+### 1. Prerequisites
+* Docker installed locally
+* MongoDB Atlas Cluster
+* SendGrid API Key (Verified Sender)
 
-Visual Intelligence: Dynamic Chart.js dashboard featuring interactive Day vs. Month comparison toggles.
+### 2. Environment Variables
+Configure these in your `.env` or Render Dashboard:
+- `MONGO_URI`: Your MongoDB connection string.
+- `SENDGRID_API_KEY`: Your SendGrid API key.
+- `MAIL_USER`: Your verified sender email.
+- `CLOUDINARY_URL`: Your Cloudinary environment variable.
 
-🛠️ Tech Stack
-Backend: Python (Flask)
+### 3. Running with Docker
+```bash
+# Build the image
+docker build -t your-treasurer .
 
-Database: MongoDB Atlas (NoSQL Cloud Hosting)
+# Run the container
+docker run -p 5000:5000 your-treasurer
+```
 
-Storage: Cloudinary (Media/Receipt Management)
+## 🧪 3. Continuous Testing (CI)
+The project includes an automated test suite (`test_app.py`) covering:
+* **Boundary Value Analysis (BVA):** Testing budget limits at 0 and extreme values.
+* **Functional Logic:** Verifying login hash validation and expense addition.
+* **Route Integrity:** Ensuring all 200 OK status codes for core navigation.
 
-Communication: Flask-Mail (SMTP Integration)
+## 📊 4. Deployment Evidence
+* **CI/CD Status:** [View GitHub Actions](https://github.com/Pritee3011/YourTreasurer/actions)
+* **Live Demo:** [YourTreasurer on Render](https://your-treasurer.onrender.com)
 
-Frontend: HTML5, CSS3 (Glassmorphism UI), JavaScript (AJAX for seamless updates)
-
-🚀 Quick Start
-1. Clone the Repository
-Bash
-git clone https://github.com/commitverse2026/YourTreasurer.git
-cd YourTreasurer
-2. Install Dependencies
-Bash
-pip install -r requirements.txt
-3. Setup Environment Variables
-Create a .env file in the root directory and configure the following:
-
-MONGO_URI: Your MongoDB Atlas connection string.
-
-MAIL_USERNAME & MAIL_PASSWORD: Your SMTP credentials.
-
-CLOUDINARY_URL: Your Cloudinary API environment variable.
-
-4. Run the Application
-Bash
-python app.py
-📊 Implementation Roadmap
-[x] Foundation: Budget Gateway & 30-Day Reset Logic
-
-[x] Automation: Tiered Mail Alerts & Receipt Vaulting
-
-[x] Intelligence: Aggregation API & Dynamic Data Toggles
-
-[x] Liabilities: EMI Manager & Peer Debt Recovery Logic
-
-[x] Polish: Real-time Progress Bars & UI Animations
-
-Developed with ❤️ for CommitVerse 2026
+``
