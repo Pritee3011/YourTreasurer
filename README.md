@@ -59,6 +59,6 @@ The project includes an automated test suite (`test_app.py`) covering:
 
 ## 📊 4. Deployment Evidence
 * **CI/CD Status:** [View GitHub Actions](https://github.com/Pritee3011/YourTreasurer/actions)
-* **Live Demo:** [YourTreasurer on Render](https://your-treasurer.onrender.com)
+* **Live Demo:** [YourTreasurer on Render](https://treasure-1-yblo.onrender.com/)
 
 ``
