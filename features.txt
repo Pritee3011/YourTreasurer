@@ -101,7 +101,7 @@ Detailed Logic: 1. Add a toggle button.
 3. Month view: Compare daily spending of the last 30 days.
 Effect: Use chart.update() for a smooth transition between views without page reload.
 
-Phase 4: Liabilities & Recurring Spend
+Phase 4: Liabilities & Recurring Spend.
 Task 11 [60 Marks]: Interval Spend Manager (Medium Difficulty)
 Files: interval_spend.html, app.py
 Database: recurring_payments collection.
